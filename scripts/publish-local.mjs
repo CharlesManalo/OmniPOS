@@ -29,6 +29,7 @@ for (const name of [
   "OMNIPOS_PUBLISHER_NAME",
 ]) {
   const value = config[name] ?? "";
+  if (name === "OMNIPOS_PUBLISHER_NAME" && !value) continue;
   if (/sbp_|sb_secret_|PRIVATE KEY/.test(value))
     throw new Error("Secret in public repository configuration");
   const base = `/repos/${repository}/actions/variables`;
