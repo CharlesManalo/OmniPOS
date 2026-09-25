@@ -1,0 +1,78 @@
+name: Build Windows release
+on:
+  workflow_dispatch:
+    inputs:
+      update_requirement:
+        description: "How should clients receive this update?"
+        required: true
+        type: choice
+        default: optional
+        options: [optional, required]
+      publish_release:
+        description: "Publish immediately after verification (otherwise create a draft)"
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      OMNIPOS_SUPABASE_URL: ${{ vars.OMNIPOS_SUPABASE_URL }}
+      OMNIPOS_SUPABASE_PUBLISHABLE_KEY: ${{ vars.OMNIPOS_SUPABASE_PUBLISHABLE_KEY }}
+      OMNIPOS_LICENSE_PUBLIC_KEY: ${{ vars.OMNIPOS_LICENSE_PUBLIC_KEY }}
+      OMNIPOS_GITHUB_OWNER: CharlesManalo
+      OMNIPOS_GITHUB_REPO: OmniPOS
+      OMNIPOS_PUBLISHER_NAME: ${{ vars.OMNIPOS_PUBLISHER_NAME }}
+      CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
+      CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify release configuration
+        shell: pwsh
+        run: |
+          if (-not $env:OMNIPOS_SUPABASE_PUBLISHABLE_KEY -or -not $env:OMNIPOS_LICENSE_PUBLIC_KEY) { throw 'Configure public Supabase and license verification settings first.' }
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:desktop
+      - run: npm run test:integration
+      - run: npm run package:pos
+      - run: npm run package:developer
+      - name: Apply the developer's update policy and patch notes
+        run: npm run release:prepare -- ${{ inputs.update_requirement }}
+      - run: npm run verify:packages
+      - run: npm run test:packaged
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OmniPOS-Windows
+          path: |
+            release/*/*.exe
+            release/*/*.blockmap
+            release/pos/pos.yml
+            release/developer/developer.yml
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = "v$version"
+          $assets = @("release/pos/OmniPOS-Setup-$version.exe", "release/pos/OmniPOS-Setup-$version.exe.blockmap", "release/pos/pos.yml", "release/developer/OmniPOS-Developer-Setup-$version.exe", "release/developer/OmniPOS-Developer-Setup-$version.exe.blockmap", "release/developer/developer.yml")
+          gh release create $tag --draft --target $env:GITHUB_SHA --title "OmniPOS $tag" --notes-file release/notes.md @assets
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed; inspect GitHub before retrying.' }
+      - name: Publish release when selected
+        if: inputs.publish_release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          gh release edit "v$version" --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed; inspect the release state before retrying.' }

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+.env
+.env.*
+!.env.example
+!.env.server.example
+.secrets/
+test-results/
+*.log
+*.sqlite*
+.agents/
+.aider-desk/
+.supabase/
+supabase/.temp/

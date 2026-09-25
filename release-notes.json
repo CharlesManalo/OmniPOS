@@ -1,0 +1,32 @@
+{
+  "version": "0.1.1",
+  "title": "Client updates and release controls",
+  "sections": [
+    {
+      "title": "Updates",
+      "items": [
+        "The developer can publish required or optional releases through GitHub Actions.",
+        "Clients can update now or opt into automatic optional updates.",
+        "Updates wait for an open sale to finish or be cleared, then restart the application.",
+        "Required updates prevent new sales once detected; an already-open sale may finish.",
+        "Patch notes are available offline through What's new at the bottom-left."
+      ]
+    },
+    {
+      "title": "Included platform features",
+      "items": [
+        "Separate Developer and POS apps, tenant management, account roles, plans, modules and renewals.",
+        "Signed licensing allows up to 24 hours offline, never beyond paid expiry.",
+        "Local catalog, stock, cash checkout, manually verified GCash recording and cloud sale backup."
+      ]
+    },
+    {
+      "title": "Initial release limitations",
+      "items": [
+        "Windows installers are currently unsigned.",
+        "Inventory is per-terminal; cloud sale backups are not multi-terminal stock synchronization.",
+        "Hardware printing, refunds, certified invoicing and automatic payment verification are not included."
+      ]
+    }
+  ]
+}

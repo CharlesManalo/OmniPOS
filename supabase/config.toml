@@ -1,0 +1,10 @@
+project_id = "omnipos"
+
+[auth]
+enable_signup = false
+
+[functions.control-plane]
+# The handler verifies the JWT with auth.getUser on EVERY request.
+# This also supports Supabase's new asymmetric signing keys.
+verify_jwt = false
+import_map = "./functions/deno.json"
